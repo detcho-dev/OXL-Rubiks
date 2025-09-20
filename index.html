@@ -1163,30 +1163,4 @@
         });
     </script>
 </body>
-</html>ccessfully!');
-            
-            // Reset form
-            document.getElementById('contact-form').reset();
-        });
-
-        // Initialize the page
-        document.addEventListener('DOMContentLoaded', () => {
-            renderProducts();
-            updateCart();
-            
-            // Navigation active state
-            const navLinks = document.querySelectorAll('nav a');
-            navLinks.forEach(link => {
-                link.addEventListener('click', () => {
-                    navLinks.forEach(l => l.classList.remove('active'));
-                    link.classList.add('active');
-                    
-                    // Hide cart when navigating
-                    cartSection.classList.add('hidden');
-                    checkoutSection.classList.add('hidden');
-                });
-            });
-        });
-    </script>
-</body>
 </html>
