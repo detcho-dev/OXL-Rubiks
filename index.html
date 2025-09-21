@@ -544,7 +544,7 @@
             .contact-container {
                 flex-direction: column;
             }
-            
+
             .hero h2 {
                 font-size: 2.8rem;
             }
@@ -555,21 +555,21 @@
                 flex-direction: column;
                 gap: 15px;
             }
-            
+
             nav ul {
                 gap: 10px;
                 flex-wrap: wrap;
                 justify-content: center;
             }
-            
+
             .hero {
                 padding: 60px 20px;
             }
-            
+
             .hero h2 {
                 font-size: 2.2rem;
             }
-            
+
             section {
                 padding: 40px 0;
             }
@@ -579,11 +579,11 @@
             .section-title h2 {
                 font-size: 2rem;
             }
-            
+
             .products-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .cart-item {
                 flex-direction: column;
                 align-items: flex-start;
@@ -606,6 +606,53 @@
 
         .mb-20 {
             margin-bottom: 20px;
+        }
+
+         /* Modal Styles */
+         .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001; /* Higher than header */
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow-y: auto; /* Allow scrolling if content is large */
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #aaa;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: var(--dark);
+        }
+
+        /* Ensure modal content grid behaves well */
+        #products-container-modal {
+            margin-top: 40px; /* Space for the title */
         }
     </style>
 </head>
@@ -641,14 +688,17 @@
         </div>
     </section>
 
-    <!-- Products Section -->
+    <!-- Products Section (Samples) -->
     <section id="products">
         <div class="container">
             <div class="section-title">
-                <h2>Our Products</h2>
+                <h2>Featured Products</h2>
             </div>
-            <div class="products-grid" id="products-container">
-                <!-- Products will be loaded here -->
+            <div class="products-grid" id="products-container-samples">
+                <!-- Sample Products will be loaded here -->
+            </div>
+            <div class="text-center mt-20">
+                <button class="btn" id="view-all-products-btn">View All Products</button>
             </div>
         </div>
     </section>
@@ -818,6 +868,19 @@
         </div>
     </footer>
 
+    <!-- Pop-up Modal Structure -->
+    <div id="products-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="section-title text-center">
+                <h2>All Our Products</h2>
+            </div>
+            <div class="products-grid" id="products-container-modal">
+                <!-- All Products will be loaded here inside the modal -->
+            </div>
+        </div>
+    </div>
+
     <script>
         // Sample products data
         const sampleProducts = [
@@ -841,7 +904,13 @@
                 price: 19.99,
                 description: 'Magnetic version of the popular Valk 3 with excellent stability.',
                 image: 'https://images.unsplash.com/photo-1605607620385-4aff65e0d7f3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80'
-            },
+            }
+            // Removed products 4, 5, 6 to keep only 3 samples
+        ];
+
+        // Full products data (including samples)
+        const allProducts = [
+            ...sampleProducts, // Include the sample products first
             {
                 id: '4',
                 name: 'MoYu WeiLong WR M 2021',
@@ -865,16 +934,17 @@
             }
         ];
 
-        // Initialize localStorage with sample products if empty
+        // Initialize localStorage with full products list if empty
         if (!localStorage.getItem('products')) {
-            localStorage.setItem('products', JSON.stringify(sampleProducts));
+            localStorage.setItem('products', JSON.stringify(allProducts));
         }
 
         // Cart functionality
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
         // DOM Elements
-        const productsContainer = document.getElementById('products-container');
+        const productsContainerSamples = document.getElementById('products-container-samples'); // For samples
+        const productsContainerModal = document.getElementById('products-container-modal'); // For modal
         const cartItems = document.getElementById('cart-items');
         const cartCount = document.querySelector('.cart-count');
         const totalPrice = document.querySelector('.total-price');
@@ -882,46 +952,85 @@
         const checkoutSection = document.getElementById('checkout-section');
         const checkoutBtn = document.getElementById('checkout-btn');
         const cartToggle = document.getElementById('cart-toggle');
+        const viewAllBtn = document.getElementById('view-all-products-btn');
+        const modal = document.getElementById('products-modal');
+        const closeBtn = document.querySelector('.close-btn');
 
-        // Render products
-        function renderProducts() {
-            const products = JSON.parse(localStorage.getItem('products')) || [];
-            productsContainer.innerHTML = '';
-            
-            products.forEach(product => {
-                const productCard = document.createElement('div');
-                productCard.className = 'product-card';
-                productCard.innerHTML = `
-                    <div class="product-image">
-                        <img src="${product.image}" alt="${product.name}">
-                    </div>
-                    <div class="product-info">
-                        <h3>${product.name}</h3>
-                        <p>${product.description}</p>
-                        <div class="product-price">$${product.price.toFixed(2)}</div>
-                        <button class="add-to-cart" data-id="${product.id}">Add to Cart</button>
-                    </div>
-                `;
-                productsContainer.appendChild(productCard);
+        // Function to render a specified number of sample products
+        function renderSampleProducts(numSamples = 3) {
+            // const products = JSON.parse(localStorage.getItem('products')) || [];
+            // const sampleProducts = products.slice(0, numSamples); // Get first N products as samples
+            // Using the sampleProducts array directly for consistency
+            productsContainerSamples.innerHTML = '';
+
+            sampleProducts.forEach(product => {
+                const productCard = createProductCard(product);
+                productsContainerSamples.appendChild(productCard);
             });
-            
-            // Add event listeners to add to cart buttons
-            document.querySelectorAll('.add-to-cart').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const productId = e.target.dataset.id;
-                    addToCart(productId);
-                });
+
+            // Add event listeners to add to cart buttons in samples
+            addCartEventListeners(productsContainerSamples);
+        }
+
+        // Function to render all products (for the modal)
+        function renderAllProducts() {
+            // const products = JSON.parse(localStorage.getItem('products')) || [];
+            // Using the allProducts array directly for consistency
+            productsContainerModal.innerHTML = '';
+
+            allProducts.forEach(product => {
+                const productCard = createProductCard(product);
+                productsContainerModal.appendChild(productCard);
             });
+
+            // Add event listeners to add to cart buttons in modal
+            addCartEventListeners(productsContainerModal);
+        }
+
+        // Helper function to create a product card element (avoids repetition)
+        function createProductCard(product) {
+            const productCard = document.createElement('div');
+            productCard.className = 'product-card';
+            productCard.innerHTML = `
+                <div class="product-image">
+                    <img src="${product.image}" alt="${product.name}">
+                </div>
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <p>${product.description}</p>
+                    <div class="product-price">$${product.price.toFixed(2)}</div>
+                    <button class="add-to-cart" data-id="${product.id}">Add to Cart</button>
+                </div>
+            `;
+            return productCard;
+        }
+
+        // Helper function to add event listeners to "Add to Cart" buttons within a container
+        function addCartEventListeners(container) {
+             container.querySelectorAll('.add-to-cart').forEach(button => {
+                 // Remove existing listeners to prevent duplicates if re-rendering
+                 const newButton = button.cloneNode(true);
+                 button.parentNode.replaceChild(newButton, button);
+                 newButton.addEventListener('click', (e) => {
+                     const productId = newButton.dataset.id;
+                     addToCart(productId);
+                     // Optional: Close modal if item is added from there and you want it to close
+                     // if (modal && !modal.classList.contains('hidden')) {
+                     //     modal.classList.add('hidden');
+                     //     document.body.style.overflow = 'auto'; // Re-enable scrolling
+                     // }
+                 });
+             });
         }
 
         // Add to cart function
         function addToCart(productId) {
-            const products = JSON.parse(localStorage.getItem('products')) || [];
-            const product = products.find(p => p.id === productId);
-            
+            // const products = JSON.parse(localStorage.getItem('products')) || [];
+            const product = allProducts.find(p => p.id === productId); // Find in full list
+
             if (product) {
                 const existingItem = cart.find(item => item.id === productId);
-                
+
                 if (existingItem) {
                     existingItem.quantity += 1;
                 } else {
@@ -930,7 +1039,7 @@
                         quantity: 1
                     });
                 }
-                
+
                 localStorage.setItem('cart', JSON.stringify(cart));
                 updateCart();
                 showNotification(`${product.name} added to cart!`);
@@ -942,22 +1051,22 @@
             // Update cart count
             const totalItems = cart.reduce((total, item) => total + item.quantity, 0);
             cartCount.textContent = totalItems;
-            
+
             // Update cart items display
             cartItems.innerHTML = '';
-            
+
             if (cart.length === 0) {
                 cartItems.innerHTML = '<p class="text-center">Your cart is empty</p>';
                 totalPrice.textContent = '$0.00';
                 return;
             }
-            
+
             let total = 0;
-            
+
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
-                
+
                 const cartItem = document.createElement('div');
                 cartItem.className = 'cart-item';
                 cartItem.innerHTML = `
@@ -979,9 +1088,9 @@
                 `;
                 cartItems.appendChild(cartItem);
             });
-            
+
             totalPrice.textContent = `$${total.toFixed(2)}`;
-            
+
             // Add event listeners to quantity buttons
             document.querySelectorAll('.quantity-btn.minus').forEach(button => {
                 button.addEventListener('click', (e) => {
@@ -989,7 +1098,7 @@
                     updateQuantity(productId, -1);
                 });
             });
-            
+
             document.querySelectorAll('.quantity-btn.plus').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const productId = e.target.dataset.id;
@@ -1001,14 +1110,14 @@
         // Update item quantity
         function updateQuantity(productId, change) {
             const item = cart.find(item => item.id === productId);
-            
+
             if (item) {
                 item.quantity += change;
-                
+
                 if (item.quantity <= 0) {
                     cart = cart.filter(item => item.id !== productId);
                 }
-                
+
                 localStorage.setItem('cart', JSON.stringify(cart));
                 updateCart();
             }
@@ -1030,14 +1139,14 @@
             notification.style.zIndex = '1000';
             notification.style.opacity = '0';
             notification.style.transition = 'opacity 0.3s ease';
-            
+
             document.body.appendChild(notification);
-            
+
             // Fade in
             setTimeout(() => {
                 notification.style.opacity = '1';
             }, 10);
-            
+
             // Remove after 3 seconds
             setTimeout(() => {
                 notification.style.opacity = '0';
@@ -1047,7 +1156,29 @@
             }, 3000);
         }
 
-        // Event Listeners
+        // Event Listeners for Modal
+        if (viewAllBtn && modal && closeBtn) { // Check if elements exist
+            viewAllBtn.addEventListener('click', () => {
+                renderAllProducts(); // Populate the modal with all products
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = 'auto'; // Re-enable scrolling
+            });
+
+            // Close modal if user clicks outside the content
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    modal.classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        }
+
+        // Other Event Listeners
         cartToggle.addEventListener('click', () => {
             // Hide other sections
             document.querySelectorAll('section').forEach(section => {
@@ -1055,11 +1186,11 @@
                     section.classList.add('hidden');
                 }
             });
-            
+
             // Show cart section
             cartSection.classList.remove('hidden');
             checkoutSection.classList.add('hidden');
-            
+
             // Update cart display
             updateCart();
         });
@@ -1069,19 +1200,19 @@
                 showNotification('Your cart is empty!');
                 return;
             }
-            
+
             cartSection.classList.add('hidden');
             checkoutSection.classList.remove('hidden');
         });
 
         document.getElementById('checkout-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             // Get form data
             const name = document.getElementById('name').value;
             const phone = document.getElementById('phone').value;
             const address = document.getElementById('address').value;
-            
+
             // Create order object
             const order = {
                 id: Date.now().toString(),
@@ -1092,23 +1223,23 @@
                 total: parseFloat(totalPrice.textContent.replace('$', '')),
                 date: new Date().toISOString()
             };
-            
+
             // Save order to localStorage
             const orders = JSON.parse(localStorage.getItem('orders')) || [];
             orders.push(order);
             localStorage.setItem('orders', JSON.stringify(orders));
-            
+
             // Clear cart
             cart = [];
             localStorage.setItem('cart', JSON.stringify(cart));
             updateCart();
-            
+
             // Show success message
             showNotification('Order placed successfully!');
-            
+
             // Reset form
             document.getElementById('checkout-form').reset();
-            
+
             // Go back to products
             checkoutSection.classList.add('hidden');
             document.getElementById('products').scrollIntoView();
@@ -1116,12 +1247,12 @@
 
         document.getElementById('contact-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             // Get form data
             const name = document.getElementById('contact-name').value;
             const email = document.getElementById('contact-email').value;
             const message = document.getElementById('contact-message').value;
-            
+
             // Create message object
             const contactMessage = {
                 id: Date.now().toString(),
@@ -1130,37 +1261,43 @@
                 message,
                 date: new Date().toISOString()
             };
-            
+
             // Save message to localStorage
             const messages = JSON.parse(localStorage.getItem('messages')) || [];
             messages.push(contactMessage);
             localStorage.setItem('messages', JSON.stringify(messages));
-            
+
             // Show success message
             showNotification('Message sent successfully!');
-            
+
             // Reset form
             document.getElementById('contact-form').reset();
         });
 
         // Initialize the page
         document.addEventListener('DOMContentLoaded', () => {
-            renderProducts();
+            renderSampleProducts(); // Render sample products on page load
+            // renderProducts(); // Remove or comment out the old full render call
             updateCart();
-            
+
             // Navigation active state
             const navLinks = document.querySelectorAll('nav a');
             navLinks.forEach(link => {
                 link.addEventListener('click', () => {
                     navLinks.forEach(l => l.classList.remove('active'));
                     link.classList.add('active');
-                    
+
                     // Hide cart when navigating
                     cartSection.classList.add('hidden');
                     checkoutSection.classList.add('hidden');
+                     // Also hide modal if navigating away
+                    if (modal && !modal.classList.contains('hidden')) {
+                        modal.classList.add('hidden');
+                        document.body.style.overflow = 'auto';
+                    }
                 });
             });
         });
     </script>
 </body>
-</html>
+    </html>
